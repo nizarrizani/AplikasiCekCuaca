@@ -1,8 +1,16 @@
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import javax.swing.ImageIcon;
+import javax.swing.JOptionPane;
+import org.json.JSONObject;
+
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
-
 /**
  *
  * @author ASUS
@@ -65,6 +73,11 @@ public class CekCuacaFrame extends javax.swing.JFrame {
         jPanel1.add(txtNamaKota, gridBagConstraints);
 
         btnCekCuaca.setText("Cek Cuaca");
+        btnCekCuaca.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCekCuacaActionPerformed(evt);
+            }
+        });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 2;
@@ -196,6 +209,75 @@ public class CekCuacaFrame extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void btnCekCuacaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCekCuacaActionPerformed
+        String kota = txtNamaKota.getText();
+        cekCuaca(kota);
+    }//GEN-LAST:event_btnCekCuacaActionPerformed
+
+    private void cekCuaca(String kota) {
+        // Cek dulu apakah kota kosong
+        if (kota == null || kota.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nama kota tidak boleh kosong!", "Error", JOptionPane.WARNING_MESSAGE);
+            return; // Hentikan proses jika kota kosong
+        }
+
+        String apiKey = "07df57ec686790b155da3f0b59a7c39a"; // Ganti dengan API key OpenWeatherMap-mu
+        String urlString = "https://api.openweathermap.org/data/2.5/weather?q=" + kota + "&appid=" + apiKey + "&units=metric";
+
+        try {
+            // Buat URL dan koneksi
+            URL url = new URL(urlString);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+
+            // Baca respon API-nya
+            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+            reader.close();
+
+            // Parsing JSON respon dari API
+            JSONObject json = new JSONObject(response.toString());
+
+            // Ambil data cuaca
+            String cuaca = json.getJSONArray("weather").getJSONObject(0).getString("main");
+            String keterangan = json.getJSONArray("weather").getJSONObject(0).getString("description");
+            String iconCode = json.getJSONArray("weather").getJSONObject(0).getString("icon");
+            double suhu = json.getJSONObject("main").getDouble("temp");
+            double angin = json.getJSONObject("wind").getDouble("speed");
+            int awan = json.getJSONObject("clouds").getInt("all");
+
+            // Update label di GUI
+            lblCuaca.setText(cuaca);
+
+            // Tampilkan keterangan dengan tooltip jika teksnya panjang
+            lblKeteranganCuaca.setText(keterangan);
+            lblKeteranganCuaca.setToolTipText(keterangan);
+
+            lblSuhuCuaca.setText(suhu + " °C");
+            lblAnginCuaca.setText(angin + " m/s");
+            lblAwanCuaca.setText(awan + " %");
+
+            // Set icon cuaca
+            String iconUrl = "http://openweathermap.org/img/wn/" + iconCode + "@2x.png";
+            lblIcon.setIcon(new ImageIcon(new URL(iconUrl)));
+
+        } catch (Exception e) {
+            // Tampilkan error tanpa URL, hanya pesan kesalahan
+            JOptionPane.showMessageDialog(this, "Gagal mengambil data cuaca: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            lblCuaca.setText("Error");
+            lblKeteranganCuaca.setText("Tidak dapat memuat cuaca");
+            lblKeteranganCuaca.setToolTipText(null); // Hapus tooltip jika error
+            lblSuhuCuaca.setText("-");
+            lblAnginCuaca.setText("-");
+            lblAwanCuaca.setText("-");
+            lblIcon.setIcon(null);
+        }
+    }
 
     /**
      * @param args the command line arguments
